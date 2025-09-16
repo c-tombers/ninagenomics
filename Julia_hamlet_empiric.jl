@@ -1,5 +1,5 @@
 using IdentityByDescentDispersal
-using DataFrames, DelimitedFiles, CSV, Plots, GLM, Statistics
+using DataFrames, DelimitedFiles, Plots, Statistics
 using Turing, StatsBase, StatsPlots
 
 #----inputs----
@@ -15,7 +15,7 @@ contig_lengths = vec(readdlm("input_contig_lengths.txt", ',', Float64))
 
 bins = vec(readdlm("input_bins.txt", ',', Float64))
 
-min_length = 0.002 #in Morgan
+min_length = 0.004 #in Morgan
 
 
 
@@ -51,7 +51,7 @@ plot(distance_list, IBD_array[:, 1],
      title="IBD vs Distance", 
      marker=:circle, 
      seriestype=:scatter,
-     label="0.2 - 0.8 cM",
+     label="0.4 - 0.8 cM",
      color=colors[1])
 
 plot!(distance_list, IBD_array[:, 2],
@@ -69,10 +69,10 @@ plot!(distance_list, IBD_array[:, 4],
      label="2.9 - 5.0 cM",
      color=colors[4])
 
-L = [0.006, 0.007, 0.014, 0.021]   # length of the IBD block (in Morgans)
-G = 13.372 * 4 * 10^-2             # Hamlets - Genome length (in Morgans)
-D = 0.0264122                      # Effective Population Density
-σ = 50                             # Root mean square dispersal distance per generation.
+L = [0.004, 0.008, 0.015, 0.029] # length of the IBD block (in Morgans) # Block length threshold (in Morgans) # in MLE (composite_loglikelihood_constant_density) wird hier IBD_LEFT angenommen
+G = 13.372  * 10^-2             # Hamlets - Genome length (in Morgans)
+D = 0.0735476                      # Effective Population Density
+σ = 16.0822                        # Root mean square dispersal distance per generation.
 r_values = range(0.01, 200.0, length = 200)
 
 for bin in 1:4
@@ -90,11 +90,11 @@ println("saved fig")
 
 
 
-#---- constant maxlike estimation
+# ---- constant maxlike estimation
 using Turing, StatsBase, StatsPlots
 @model function constant_density(df, contig_lengths)
     D ~ Uniform(0, 100)
-    σ ~ Uniform(0, 50)
+    σ ~ Uniform(0, 100)
     Turing.@addlogprob! composite_loglikelihood_constant_density(D, σ, df, contig_lengths)
 end
 
@@ -105,7 +105,7 @@ mle_df = DataFrame(coeftable(mle_estimate)) # computed from the Fisher informati
 open("output_MLE.txt", "w") do io
     show(io, MIME("text/plain"), mle_df)
 end
-
+#
 # @model function power_density(df, contig_lengths)
 #     D ~ Truncated(Normal(100, 20), 0, Inf)
 #     σ ~ Truncated(Normal(1, 0.1), 0, Inf)
